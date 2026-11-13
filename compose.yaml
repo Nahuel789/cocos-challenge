@@ -1,0 +1,25 @@
+services:
+  postgres:
+    image: 'postgres:16'
+    environment:
+      - 'POSTGRES_DB=cocos'
+      - 'POSTGRES_PASSWORD=cocos'
+      - 'POSTGRES_USER=cocos'
+    ports:
+      - '5432:5432'
+
+  localstack:
+    image: 'localstack/localstack:4'
+    environment:
+      - 'SERVICES=sns,sqs'
+      - 'AWS_DEFAULT_REGION=us-east-1'
+    ports:
+      - '4566:4566'
+    volumes:
+      - './localstack/init-sns.sh:/etc/localstack/init/ready.d/init-sns.sh'
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:4566/_localstack/health']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
