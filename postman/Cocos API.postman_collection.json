@@ -1,0 +1,540 @@
+{
+  "info": {
+    "name": "Cocos API",
+    "description": "Portfolio, búsqueda de instrumentos y órdenes.\n\nbaseUrl está en la collection y en el environment Cocos Local (http://localhost:8080). Si importás el environment, activalo.\n\nGGAL es el instrumentId 34.\n\nLa paginación de instrumentos y de órdenes es opcional. Sin page ni size se usa page=0 y size=20 (máximo 100). Cada caso queda en un request aparte para poder probarlo solo.\n\nLa compra LIMIT guarda el id en la variable de collection orderId. Cancelar y Cancelar de nuevo usan ese id: corrélas después de la compra LIMIT, o reemplazá orderId a mano por una orden NEW. Las órdenes del seed (1 y 2) están FILLED, así que cancelarlas responde 409.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "orderId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Portfolio",
+      "item": [
+        {
+          "name": "Portfolio del usuario de prueba",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/users/1/portfolio",
+            "description": "Portfolio del usuario de prueba (id 1)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.have.property('totalValue');",
+                  "    pm.expect(body).to.have.property('availableCash');",
+                  "    pm.expect(body).to.have.property('positions');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Instrumentos",
+      "item": [
+        {
+          "name": "Buscar por ticker",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/instruments?ticker=GGAL",
+            "description": "Busca por ticker. Coincidencia parcial, sin distinguir mayúsculas. La respuesta es { instruments, page }."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 y trae GGAL', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.instruments.length).to.be.above(0);",
+                  "    pm.expect(body.instruments[0].id).to.eql(34);",
+                  "    pm.expect(body.instruments[0].ticker).to.eql('GGAL');",
+                  "    pm.expect(body.page).to.have.property('totalElements');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buscar por nombre",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/instruments?name=Grupo Financiero Galicia",
+            "description": "Busca por nombre. Coincidencia parcial, sin distinguir mayúsculas. La respuesta es { instruments, page }."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 y matchea por nombre', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.instruments.length).to.be.above(0);",
+                  "    pm.expect(body.instruments[0].ticker).to.eql('GGAL');",
+                  "    pm.expect(body.instruments[0].name.toLowerCase()).to.include('galicia');",
+                  "    pm.expect(body.page).to.have.property('totalElements');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Catálogo, primera página",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/instruments",
+            "description": "Catálogo sin page ni size. La paginación es opcional: page=0 y size=20. Con el seed son 20 de 65. La respuesta es { instruments, page }."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200, primera página de 20', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.instruments).to.have.lengthOf(20);",
+                  "    pm.expect(body.instruments[0].ticker).to.eql('AGRO');",
+                  "    pm.expect(body.instruments[19].ticker).to.eql('CVH');",
+                  "    pm.expect(body.page.number).to.eql(0);",
+                  "    pm.expect(body.page.size).to.eql(20);",
+                  "    pm.expect(body.page.totalElements).to.eql(65);",
+                  "    pm.expect(body.page.totalPages).to.eql(4);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Catálogo, última página",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/instruments?page=3",
+            "description": "Última página del seed. page es opcional; acá se manda solo page=3 y size queda en 20. Son 5 de 65."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200, última página', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.instruments).to.have.lengthOf(5);",
+                  "    pm.expect(body.instruments[0].ticker).to.eql('TGSU2');",
+                  "    pm.expect(body.instruments[4].ticker).to.eql('YPFD');",
+                  "    pm.expect(body.page.number).to.eql(3);",
+                  "    pm.expect(body.page.size).to.eql(20);",
+                  "    pm.expect(body.page.totalElements).to.eql(65);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Catálogo con página y tamaño",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/instruments?page=1&size=10",
+            "description": "page y size juntos. Ambos son opcionales. page=1 y size=10."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200, page 1 size 10', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.instruments).to.have.lengthOf(10);",
+                  "    pm.expect(body.page.number).to.eql(1);",
+                  "    pm.expect(body.page.size).to.eql(10);",
+                  "    pm.expect(body.page.totalElements).to.eql(65);",
+                  "    pm.expect(body.page.totalPages).to.eql(7);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Órdenes",
+      "item": [
+        {
+          "name": "Compra MARKET por cantidad",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 1,\n  \"instrumentId\": 34,\n  \"side\": \"BUY\",\n  \"type\": \"MARKET\",\n  \"quantity\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/orders",
+            "description": "Compra MARKET por cantidad de GGAL (instrumentId 34). El precio del body se ignora y se usa el close. Queda FILLED."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 FILLED', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.status).to.eql('FILLED');",
+                  "    pm.expect(body.type).to.eql('MARKET');",
+                  "    pm.expect(body.side).to.eql('BUY');",
+                  "    pm.expect(body.instrumentId).to.eql(34);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Compra LIMIT por monto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 1,\n  \"instrumentId\": 34,\n  \"side\": \"BUY\",\n  \"type\": \"LIMIT\",\n  \"amount\": 100000,\n  \"price\": 800\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/orders",
+            "description": "Compra LIMIT de GGAL (instrumentId 34) por monto. size = floor(amount / price). Queda NEW y guarda el id en {{orderId}} para cancelarla después."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 NEW y size = floor(amount / price)', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.status).to.eql('NEW');",
+                  "    pm.expect(body.type).to.eql('LIMIT');",
+                  "    pm.expect(body.instrumentId).to.eql(34);",
+                  "    pm.expect(Number(body.size)).to.eql(Math.floor(100000 / 800));",
+                  "    pm.collectionVariables.set('orderId', String(body.id));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Venta MARKET",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 1,\n  \"instrumentId\": 34,\n  \"side\": \"SELL\",\n  \"type\": \"MARKET\",\n  \"quantity\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/orders",
+            "description": "Venta MARKET de GGAL (instrumentId 34). Se ejecuta al close y queda FILLED."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 FILLED', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.status).to.eql('FILLED');",
+                  "    pm.expect(body.side).to.eql('SELL');",
+                  "    pm.expect(body.instrumentId).to.eql(34);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rechazo por pesos insuficientes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 1,\n  \"instrumentId\": 34,\n  \"side\": \"BUY\",\n  \"type\": \"MARKET\",\n  \"quantity\": 100000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/orders",
+            "description": "Rechazo por pesos insuficientes al comprar GGAL (instrumentId 34). Responde 201 con status REJECTED."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 REJECTED', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.status).to.eql('REJECTED');",
+                  "    pm.expect(body.instrumentId).to.eql(34);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rechazo por acciones insuficientes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 1,\n  \"instrumentId\": 34,\n  \"side\": \"SELL\",\n  \"type\": \"MARKET\",\n  \"quantity\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/orders",
+            "description": "Rechazo por acciones insuficientes. El usuario de prueba no tiene GGAL (instrumentId 34). Responde 201 con status REJECTED."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 REJECTED', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.status).to.eql('REJECTED');",
+                  "    pm.expect(body.instrumentId).to.eql(34);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Orden inválida: LIMIT sin precio",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 1,\n  \"instrumentId\": 34,\n  \"side\": \"BUY\",\n  \"type\": \"LIMIT\",\n  \"quantity\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/orders",
+            "description": "Orden inválida: LIMIT de GGAL (instrumentId 34) sin precio. Responde 400 y no graba."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listado de órdenes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/users/1/orders",
+            "description": "Sin page ni size devuelve la primera página: page 0 y size 20, de la más nueva a la más vieja. Emiliano tiene 11 órdenes, así que entran todas."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 y primera página de 20', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.orders).to.be.an('array');",
+                  "    pm.expect(body.orders.length).to.eql(11);",
+                  "    pm.expect(body.page.number).to.eql(0);",
+                  "    pm.expect(body.page.size).to.eql(20);",
+                  "    pm.expect(body.page.totalElements).to.eql(11);",
+                  "    pm.expect(body.page.totalPages).to.eql(1);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listado de órdenes, otra página y otro tamaño",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/users/1/orders?page=0&size=5",
+            "description": "Misma lista con page y size explícitos. page=0 y size=5."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200, page 0 size 5', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.orders.length).to.be.at.most(5);",
+                  "    pm.expect(body.page.number).to.eql(0);",
+                  "    pm.expect(body.page.size).to.eql(5);",
+                  "    pm.expect(body.page).to.have.property('totalElements');",
+                  "    pm.expect(body.page).to.have.property('totalPages');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancelar una orden NEW",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/orders/{{orderId}}/cancel",
+            "description": "Cancela una orden NEW. Usa {{orderId}}, que setea la compra LIMIT. Si corrés esta request sola, reemplazá orderId por el id de una orden NEW."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 CANCELLED', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().status).to.eql('CANCELLED');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancelar de nuevo la misma orden",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/orders/{{orderId}}/cancel",
+            "description": "Cancelar de nuevo la misma orden. Responde 409 si ya no está NEW."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409', function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
