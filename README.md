@@ -89,11 +89,13 @@ Hay que mandar `quantity` o `amount`, uno solo. `quantity` es una cantidad enter
 
 `POST /api/orders/{orderId}/cancel`
 
+No forma parte del enunciado como endpoint: el enunciado define el estado `CANCELLED` y la regla de que solo se cancelan órdenes `NEW`, pero no dice por dónde entra. Lo separé de `POST /api/orders` porque cancelar no es el mismo caso de uso que comprar o vender un activo: no crea una orden, cambia el estado de una que ya existe.
+
 Solo una orden `NEW` pasa a `CANCELLED`. Otro estado responde **409** y una orden inexistente, **404**. Al cancelar se libera la reserva. Como no hay autenticación, el endpoint solo recibe el `orderId` y no verifica de qué usuario es la orden.
 
 `GET /api/users/{userId}/orders?page=&size=`
 
-Listado para probar la colección. Sin `page` ni `size` devuelve la primera página: `page` 0 y `size` 20, máximo 100, de la más nueva a la más vieja. Emiliano (usuario 1) tiene 11 órdenes en el seed, así que esa llamada las trae todas y `page.size` queda en 20. `page.totalElements` queda en 11 y `page.totalPages` en 1. La respuesta es `{ "orders": [...], "page": { "number", "size", "totalElements", "totalPages" } }`. No forma parte del enunciado.
+No forma parte del enunciado. Está para verificar que todo funciona bien: después de crear o cancelar una orden, permite ver con qué estado quedó guardada. Sin `page` ni `size` devuelve la primera página: `page` 0 y `size` 20, máximo 100, de la más nueva a la más vieja. Emiliano (usuario 1) tiene 11 órdenes en el seed, así que esa llamada las trae todas y `page.size` queda en 20. `page.totalElements` queda en 11 y `page.totalPages` en 1. La respuesta es `{ "orders": [...], "page": { "number", "size", "totalElements", "totalPages" } }`.
 
 ## Evento al guardar una orden
 
