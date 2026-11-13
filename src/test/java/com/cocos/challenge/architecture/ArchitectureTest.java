@@ -22,7 +22,7 @@ class ArchitectureTest {
 					"org.springframework..",
 					"jakarta.persistence..",
 					"org.hibernate..")
-			.because("el dominio no depende de otras capas ni de JPA o Spring");
+			.because("the domain must not depend on other layers, JPA or Spring");
 
 	@ArchTest
 	static final ArchRule application_depends_only_on_domain = noClasses()
@@ -32,7 +32,7 @@ class ArchitectureTest {
 					"com.cocos.challenge.interfaces..",
 					"org.springframework..")
 			.orShould().beAnnotatedWith(Service.class)
-			.because("application solo depende del dominio y no declara @Service");
+			.because("the application layer depends only on the domain and must not declare @Service");
 
 	@ArchTest
 	static final ArchRule controllers_do_not_use_adapters = noClasses()
@@ -40,5 +40,5 @@ class ArchitectureTest {
 			.or().areAnnotatedWith(RestController.class)
 			.should().dependOnClassesThat().resideInAPackage("..adapter..")
 			.orShould().dependOnClassesThat().haveSimpleNameEndingWith("Adapter")
-			.because("los controllers dependen de casos de uso, no de adapters de infraestructura");
+			.because("controllers depend on use cases, not on infrastructure adapters");
 }
