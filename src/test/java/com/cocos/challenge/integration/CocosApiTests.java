@@ -108,7 +108,7 @@ class CocosApiTests {
 				.andExpect(jsonPath("$.orders", hasSize(11)))
 				.andExpect(jsonPath("$.orders[0].side").value("SELL"))
 				.andExpect(jsonPath("$.orders[0].instrumentId").value(31))
-				.andExpect(jsonPath("$.orders[0].size").value(30))
+				.andExpect(jsonPath("$.orders[0].size").value(20))
 				.andExpect(jsonPath("$.orders[10].side").value("CASH_IN"))
 				.andExpect(jsonPath("$.orders[10].size").value(1000000))
 				.andExpect(jsonPath("$.page.number").value(0))

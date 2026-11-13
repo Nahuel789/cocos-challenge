@@ -54,6 +54,8 @@ El seed (`V2__seed.sql`) parte de los datos del `database.sql` del enunciado, ad
 
 Hay 65 instrumentos, todos `ACCIONES`. `GGAL` es el id 34. El peso es la fila `ARS` de `currencies`, y cada instrumento cotiza en esa moneda. `marketdata` trae los precios del 2023-07-13 y del 2023-07-14. Las órdenes de ejemplo son las de Emiliano.
 
+Hay un cambio sobre las órdenes del `database.sql` original. En el instrumento 31, la compra `FILLED` era de 20 acciones y la venta `FILLED` posterior, de 30. Eso dejaba una tenencia de -10: la venta sumaba los pesos de 30 acciones, pero la posición no aparecía en el portfolio. La API no permite vender más de lo que se tiene, así que esos datos eran imposibles de generar por la API. En el seed se invirtieron las cantidades: la compra es de 30 a 1540 y la venta, de 20 a 1530. Emiliano termina con 10 acciones del instrumento 31, con precio promedio 1540, además de las posiciones en los instrumentos 47 y 54.
+
 ## Endpoints
 
 `GET /api/users/{userId}/portfolio`
@@ -168,6 +170,10 @@ El esquema parte de `database.sql`. Postgres guarda los identificadores sin comi
 - `orders.currency_id` es obligatorio. Una compra o una venta exige `instrumentid`. Un `CASH_IN` o un `CASH_OUT` lo deja nulo. El check `orders_side_target` fija esa regla.
 - Claves foráneas a `users`, `instruments` y `currencies`.
 - Índices `orders(userid, status)`, `orders(userid, instrumentid, status)` y `marketdata(instrumentid, date desc)`.
+
+Por qué la moneda va en su propia tabla y no como instrumento `MONEDA`: un instrumento es algo que se compra y se vende, y la moneda es la unidad en la que se mide todo lo demás. Con el peso como instrumento, cada consulta de activos tiene que filtrar `MONEDA` (la búsqueda, el portfolio, la validación del alta) y cada `CASH_IN` o `CASH_OUT` apunta a una fila que no se puede operar. Con `currencies`, la búsqueda y las posiciones solo ven activos operables sin filtros especiales, y la integridad la da la base: el check `orders_side_target` impide una compra sin instrumento o una transferencia con instrumento.
+
+La razón principal es que deja la base lista para más monedas. Agregar dólares es sumar una fila en `currencies`. Cada instrumento ya dice en qué moneda cotiza (`instruments.currency_id`) y cada orden, en qué moneda se mueve (`orders.currency_id`), así que un `CASH_IN` en USD o un CEDEAR en dólares no piden cambios de esquema. Lo que falta para eso es lógica, no estructura: el saldo por moneda en `HoldingCalculator` y una conversión para expresar el valor total en pesos. Con el peso como instrumento, cada moneda nueva sería otra fila `MONEDA` y nada en el esquema diría en qué moneda está cada precio.
 
 Flyway es el dueño del esquema. Hibernate arranca con `ddl-auto: validate` y `open-in-view: false`.
 
