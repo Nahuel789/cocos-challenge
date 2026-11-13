@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/cocos
+    username: cocos
+    password: cocos
+  docker:
+    compose:
+      enabled: true
+
+aws:
+  sns:
+    enabled: true
+    endpoint: http://localhost:4566
